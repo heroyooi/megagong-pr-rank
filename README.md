@@ -70,20 +70,20 @@ while (currentPage <= 5) {
 
 ## 내 로컬 서버 https 인증서 설치
 
-- 1. powershell을 관리자 권한으로 실행합니다.
+- powershell을 관리자 권한으로 실행합니다.
 
-- 2. powershell에서 OpenSSL이 PATH에 없다면 풀 경로로 실행하세요.
+- powershell에서 OpenSSL이 PATH에 없다면 풀 경로로 실행하세요.
 ```powershell
 cd D:\MEGA\Desktop\repo\megagong-pr-rank # 내 경로
 & "C:\Program Files\OpenSSL-Win64\bin\openssl.exe" req -x509 -newkey rsa:2048 -nodes -days 365 -keyout key.pem -out cert.pem -subj "/CN=10.70.6.131" -addext "subjectAltName=IP:10.70.6.131"
 ```
 
-- 3. powershell에서 생성 확인
+- powershell에서 생성 확인
 ```powershell
 dir cert.pem, key.pem
 ```
 
-- 4. package.json → scripts에 아래 추가/수정:
+- package.json → scripts에 아래 추가/수정:
 ```json
 {
   "scripts": {
