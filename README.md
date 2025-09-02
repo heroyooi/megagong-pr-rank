@@ -1,7 +1,7 @@
 # 📊 Megagong PR ranking (메가공 PR 랭킹)
 
 Google 검색 순위 및 트렌드 데이터를 수집/시각화하는 Next.js 기반 프로젝트입니다.  
-메가공무원(`megagong.net`)과 같은 특정 도메인의 검색 순위를 추적하거나, Google Trends 데이터를 가져와 **실시간 대시보드** 형태로 확인할 수 있습니다.
+메가공무원(`megagong.net`)과 같은 특정 도메인의 검색 순위를 추적합니다.
 
 ---
 
@@ -9,11 +9,6 @@ Google 검색 순위 및 트렌드 데이터를 수집/시각화하는 Next.js �
 
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Router + Pages Router 혼합 가능)
 - **Language**: TypeScript
-- **UI**: React 19 + SCSS
-- **Chart**: [ECharts](https://echarts.apache.org/) + `echarts-for-react`
-- **Crawler**: Puppeteer (Google 검색 결과 스크래핑)
-- **API**: Google Trends API (`google-trends-api`)
-- **Database**: Firebase (Firestore / Realtime Database)
 
 ---
 
@@ -75,19 +70,20 @@ while (currentPage <= 5) {
 
 ## 내 로컬 서버 https 인증서 설치
 
-- powershell에서 OpenSSL이 PATH에 없다면 풀 경로로 실행하세요.
+- 1. powershell을 관리자 권한으로 실행합니다.
+
+- 2. powershell에서 OpenSSL이 PATH에 없다면 풀 경로로 실행하세요.
 ```powershell
 cd D:\MEGA\Desktop\repo\megagong-pr-rank # 내 경로
 & "C:\Program Files\OpenSSL-Win64\bin\openssl.exe" req -x509 -newkey rsa:2048 -nodes -days 365 -keyout key.pem -out cert.pem -subj "/CN=10.70.6.131" -addext "subjectAltName=IP:10.70.6.131"
 ```
 
-- powershell에서 생성 확인
+- 3. powershell에서 생성 확인
 ```powershell
 dir cert.pem, key.pem
 ```
 
-
-- package.json → scripts에 아래 추가/수정:
+- 4. package.json → scripts에 아래 추가/수정:
 ```json
 {
   "scripts": {
@@ -96,7 +92,7 @@ dir cert.pem, key.pem
 }
 ```
 
-## ASP 파일에서 해당 API 사용
+## 프론트에서 API 사용
 
 - ns\view\meta.asp
 ```js
