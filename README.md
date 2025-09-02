@@ -49,7 +49,29 @@ megagong-pr-rank/
 - https:// 로 동작하며, 기본 구성은 자가서명 인증서를 사용합니다.
 - 외부 인터넷에서는 접근 불가(사설 IP)
 
+### 내 로컬 서버 https 인증서 설치
 
+- powershell을 관리자 권한으로 실행합니다.
+
+- powershell에서 OpenSSL이 PATH에 없다면 풀 경로로 실행하세요.
+```powershell
+cd D:\MEGA\Desktop\repo\megagong-pr-rank # 내 경로
+& "C:\Program Files\OpenSSL-Win64\bin\openssl.exe" req -x509 -newkey rsa:2048 -nodes -days 365 -keyout key.pem -out cert.pem -subj "/CN=10.70.6.131" -addext "subjectAltName=IP:10.70.6.131"
+```
+
+- powershell에서 생성 확인
+```powershell
+dir cert.pem, key.pem
+```
+
+- package.json → scripts에 아래 추가/수정:
+```json
+{
+  "scripts": {
+    "dev:https": "next dev --port 5857 --experimental-https --experimental-https-key ./key.pem --experimental-https-cert ./cert.pem"
+  }
+}
+```
 
 ## 🔍 API 사용법
 검색 순위 조회 API
@@ -93,30 +115,6 @@ while (currentPage <= 5) {
 - currentPage <= 5 로 되어 있어서, 구글 검색결과 5페이지까지 확인
 - 구글은 한 페이지당 기본 10개 검색결과를 보여주니까 → 5페이지 × 10개 = 최대 50개 결과까지 수집하는 구조
 - 그 안에서만 rank 값을 매기고, target(예: megagong.net)이 발견되면 해당 순위를 리턴
-
-## 내 로컬 서버 https 인증서 설치
-
-- powershell을 관리자 권한으로 실행합니다.
-
-- powershell에서 OpenSSL이 PATH에 없다면 풀 경로로 실행하세요.
-```powershell
-cd D:\MEGA\Desktop\repo\megagong-pr-rank # 내 경로
-& "C:\Program Files\OpenSSL-Win64\bin\openssl.exe" req -x509 -newkey rsa:2048 -nodes -days 365 -keyout key.pem -out cert.pem -subj "/CN=10.70.6.131" -addext "subjectAltName=IP:10.70.6.131"
-```
-
-- powershell에서 생성 확인
-```powershell
-dir cert.pem, key.pem
-```
-
-- package.json → scripts에 아래 추가/수정:
-```json
-{
-  "scripts": {
-    "dev:https": "next dev --port 5857 --experimental-https --experimental-https-key ./key.pem --experimental-https-cert ./cert.pem"
-  }
-}
-```
 
 ## 프론트에서 API 사용
 
