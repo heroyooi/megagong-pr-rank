@@ -162,3 +162,7 @@ async function fetchRankForItem(it) {
 ```
 - https로 사용할 수 있으며, 회사 내부 IP에서는 해당 api를 호출할 수 있다.
 - 외부 api로는 사용불가
+
+### 관련 링크
+- [NA - 구글 검색 순위(메타)](https://www.megagong.net/na/meta.asp)
+- [NS - Next SEO](https://nextstudy-seo.vercel.app)
