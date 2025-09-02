@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 5857",
+    "dev:https": "next dev --port 5857 --experimental-https --experimental-https-key ./key.pem --experimental-https-cert ./cert.pem",
     "build": "next build",
     "start": "next start --port 5857",
     "lint": "next lint"

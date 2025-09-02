@@ -72,3 +72,71 @@ while (currentPage <= 5) {
 - currentPage <= 5 로 되어 있어서, 구글 검색결과 5페이지까지 확인
 - 구글은 한 페이지당 기본 10개 검색결과를 보여주니까 → 5페이지 × 10개 = 최대 50개 결과까지 수집하는 구조
 - 그 안에서만 rank 값을 매기고, target(예: megagong.net)이 발견되면 해당 순위를 리턴
+
+## 내 로컬 서버 https 인증서 설치
+
+- powershell에서 OpenSSL이 PATH에 없다면 풀 경로로 실행하세요.
+```powershell
+cd D:\MEGA\Desktop\repo\megagong-pr-rank # 내 경로
+& "C:\Program Files\OpenSSL-Win64\bin\openssl.exe" req -x509 -newkey rsa:2048 -nodes -days 365 -keyout key.pem -out cert.pem -subj "/CN=10.70.6.131" -addext "subjectAltName=IP:10.70.6.131"
+```
+
+- powershell에서 생성 확인
+```powershell
+dir cert.pem, key.pem
+```
+
+
+- package.json → scripts에 아래 추가/수정:
+```json
+{
+  "scripts": {
+    "dev:https": "next dev --port 5857 --experimental-https --experimental-https-key ./key.pem --experimental-https-cert ./cert.pem"
+  }
+}
+```
+
+## ASP 파일에서 해당 API 사용
+
+- ns\view\meta.asp
+```js
+async function fetchRankForItem(it) {
+  const keywords = extractKeywords(it.meta || {});
+  const target = buildTargetStr(it);
+  const base = "https://10.70.6.131:5857/api/rank";
+
+  let bestRank = null;          // 최소(가장 좋은) 순위
+  let bestKeyword = null;       // 그 순위를 만든 키워드
+  let sumTop10Count = 0;        // 각 키워드의 top10Count 합산
+  const perKeyword = [];        // 디버깅/표시용
+
+  for (const kw of keywords) {
+    // const url = `${base}?keyword=${encodeURIComponent(kw)}&target=${encodeURIComponent(target)}&pages=10`; // 100개
+    const url = `${base}?keyword=${encodeURIComponent(kw)}&target=${encodeURIComponent(target)}`; // 50개
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // activeRank가 숫자일 때만 비교
+      const rank = (typeof data.activeRank === "number") ? data.activeRank : null;
+      const t10 = Number(data.top10Count || 0);
+
+      if (rank !== null) {
+        if (bestRank === null || rank < bestRank) {
+          bestRank = rank;
+          bestKeyword = kw;
+        }
+      }
+      if (!Number.isNaN(t10)) sumTop10Count += t10;
+
+      perKeyword.push({ keyword: kw, rank, top10Count: t10, sourceUrl: data.sourceUrl || "" });
+    } catch (e) {
+      perKeyword.push({ keyword: kw, rank: null, top10Count: 0, error: String(e) });
+    }
+  }
+
+  return { bestRank, bestKeyword, sumTop10Count, perKeyword, target, keywords };
+}
+```
+- https로 사용할 수 있으며, 회사 내부 IP에서는 해당 api를 호출할 수 있다.
+- 외부 api로는 사용불가
