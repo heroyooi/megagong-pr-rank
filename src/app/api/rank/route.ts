@@ -1,4 +1,3 @@
-// app/api/rank/route.ts
 export const runtime = 'nodejs'; // Puppeteer는 Node.js 런타임 필수
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +19,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const keyword = searchParams.get('keyword') ?? '';
   const target = searchParams.get('target') ?? ''; // ex) megagong.net
-  const maxPages = Math.min(Number(searchParams.get('pages') ?? '5'), 10); // 옵션: 검색 페이지 수(최대 10)
+  // ✅ Top10만 확인하므로 페이지는 고정 1
+  const maxPages = 1;
 
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -58,45 +58,33 @@ export async function GET(req: NextRequest) {
       Object.defineProperty(navigator, 'webdriver', { get: () => false });
     });
 
-    let currentPage = 1;
-    let searchResults: Array<{ title: string; url: string; rank: number }> = [];
-    let foundTargetRank: number | null = null;
-    let foundTargetUrl: string | null = null;
-    let targetTop10Count = 0;
+    const start = 0;
+    const searchURL = `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${start}&num=10&hl=ko&gl=KR`;
 
-    while (currentPage <= maxPages) {
-      const start = (currentPage - 1) * 10;
-      const searchURL = `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${start}`;
+    await page.goto(searchURL, { waitUntil: 'domcontentloaded' });
 
-      await page.goto(searchURL, { waitUntil: 'domcontentloaded' });
+    // 페이지에서 결과 수집
+    const pageResults: Array<{ title: string; url: string }> = await page.evaluate(() => {
+      const nodes = Array.from(document.querySelectorAll('.MjjYud'));
+      // document.querySelectorAll('a h3') // 광고/리치결과 때문에 섞이는 경우가 있으면, 선택자를 조금 더 좁혀서
+      const items = nodes.map((el) => ({
+        title: (el.querySelector('h3') as HTMLElement | null)?.innerText || '제목 없음',
+        url: (el.querySelector('a') as HTMLAnchorElement | null)?.href || '',
+      }));
+      return items.filter((r) => r.title !== '제목 없음' && r.url);
+    });
 
-      const pageResults = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('.MjjYud'))
-          .map((el) => ({
-            title: (el.querySelector('h3') as HTMLElement | null)?.innerText || '제목 없음',
-            url: (el.querySelector('a') as HTMLAnchorElement | null)?.href || '',
-          }))
-          .filter((r) => r.title !== '제목 없음' || r.url !== '');
-      });
+    const top10 = pageResults.slice(0, 10).map((r, idx) => ({
+      title: r.title,
+      url: r.url,
+      rank: idx + 1,
+    }));
 
-      pageResults.forEach((r, idx) => {
-        (r as any).rank = searchResults.length + 1 + idx;
-      });
+    const targetHit = top10.find((r) => r.url.includes(target)) || null;
+    const foundTargetRank = targetHit ? targetHit.rank : null;
+    const foundTargetUrl = targetHit ? targetHit.url : null;
 
-      searchResults = searchResults.concat(pageResults as any);
-
-      // 누적 결과에서 타겟 도메인 찾기
-      const targetResult = searchResults.find((r) => r.url.includes(target));
-      targetTop10Count = searchResults.filter((r) => r.url.includes(target) && r.rank <= 10).length;
-
-      if (targetResult) {
-        foundTargetRank = targetResult.rank;
-        foundTargetUrl = targetResult.url;
-        break;
-      }
-
-      currentPage++;
-    }
+    const targetTop10Count = top10.filter((r) => r.url.includes(target)).length;
 
     await browser.close();
 
@@ -104,10 +92,10 @@ export async function GET(req: NextRequest) {
       {
         keyword,
         target,
-        activeRank: foundTargetRank ?? 'N/A',
-        sourceUrl: foundTargetUrl,
+        activeRank: foundTargetRank ?? null,
+        sourceUrl: foundTargetUrl ?? null,
         top10Count: targetTop10Count,
-        results: searchResults,
+        results: top10,
       },
       { headers: corsHeaders }
     );
